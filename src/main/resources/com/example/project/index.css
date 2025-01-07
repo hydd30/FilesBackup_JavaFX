@@ -1,0 +1,7 @@
+.table-view .table-row-cell {
+    -fx-background-insets: 0;
+}
+
+.table-view .table-row-cell .table-cell {
+    -fx-border-width: 0px;
+}
