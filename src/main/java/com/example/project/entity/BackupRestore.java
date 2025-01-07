@@ -10,10 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.*;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.HashMap;
+import java.util.*;
 
 @Setter
 public class BackupRestore {
@@ -212,7 +209,28 @@ public class BackupRestore {
         // 创建目录元数据
         Map<String, Object> dirMetadata = new HashMap<>();
         dirMetadata.put("sourcePath", sourcePathStr);
-        dirMetadata.put("backupFiles", files);
+
+        // 收集所有文件（包括子目录中的文件）
+        List<String> allFiles = new ArrayList<>();
+        for (String file : files) {
+            Path filePath = sourceDir.resolve(file);
+            if (Files.isDirectory(filePath)) {
+                // 如果是目录，递归收集其中的文件
+                try {
+                    Files.walk(filePath)
+                            .filter(Files::isRegularFile)
+                            .map(path -> sourceDir.relativize(path).toString())
+                            .forEach(allFiles::add);
+                } catch (IOException e) {
+                    System.err.println("访问目录失败: " + filePath + " - " + e.getMessage());
+                }
+            } else {
+                // 如果是文件，直接添加
+                allFiles.add(file);
+            }
+        }
+
+        dirMetadata.put("backupFiles", allFiles);
 
         // 保存目录元数据
         try (ObjectOutputStream oos = new ObjectOutputStream(
@@ -222,17 +240,21 @@ public class BackupRestore {
 
         System.out.println("\n开始备份...");
         System.out.println("备份目录: " + bakDir);
-        System.out.println("需要备份 " + files.size() + " 个文件");
+        System.out.println("需要备份 " + allFiles.size() + " 个文件");
 
         long processedFiles = 0;
 
-        // 备份指定的文件
-        for (String fileName : files) {
+        // 备份所有文件，保持目录结构
+        for (String relativePath : allFiles) {
             try {
-                Path fileToBackup = sourceDir.resolve(fileName);
-                Path relativePath = sourceDir.relativize(fileToBackup);
-                Path targetPath = bakDir.resolve(relativePath.toString() + ".bak");
-
+                Path fileToBackup, targetPath;
+                if(Path.of(relativePath).isAbsolute()) {
+                    fileToBackup = sourceDir.resolve(relativePath);
+                    targetPath = bakDir.resolve(fileToBackup.getFileName().toString() + ".bak");
+                } else {
+                    fileToBackup = sourceDir.resolve(relativePath);
+                    targetPath = bakDir.resolve(relativePath + ".bak");
+                }
                 if (!Files.exists(fileToBackup)) {
                     System.err.println("文件不存在，跳过: " + fileToBackup);
                     continue;
@@ -243,16 +265,17 @@ public class BackupRestore {
                     continue;
                 }
 
+                // 确保目标文件的父目录存在
                 createDirectory(targetPath.getParent());
                 backupSingleFile(fileToBackup, targetPath);
                 processedFiles++;
 
-                double progress = (double) processedFiles / files.size() * 100;
+                double progress = (double) processedFiles / allFiles.size() * 100;
                 System.out.printf("\r备份进度: %.1f%% (%d/%d)",
-                        progress, processedFiles, files.size());
+                        progress, processedFiles, allFiles.size());
 
             } catch (IOException e) {
-                System.err.println("\n备份文件失败: " + fileName + " - " + e.getMessage());
+                System.err.println("\n备份文件失败: " + relativePath + " - " + e.getMessage());
             }
         }
 
@@ -288,11 +311,18 @@ public class BackupRestore {
         long totalFiles = backupFiles.size();
         long processedFiles = 0;
 
-        // 还原文件
-        for (String fileName : backupFiles) {
+        // 还原文件，保持目录结构
+        for (String relativePath : backupFiles) {
             try {
-                Path backupFilePath = backupDir.resolve(fileName.substring(fileName.lastIndexOf("/") + 1) + ".bak");
-                Path restoreFilePath = restoreDir.resolve(fileName.substring(fileName.lastIndexOf("/") + 1));
+                Path backupFilePath, restoreFilePath;
+                // 使用相对路径构建备份文件路径和还原文件路径
+                if(Path.of(relativePath).isAbsolute()) {
+                    backupFilePath = backupDir.resolve(Path.of(relativePath).getFileName() + ".bak");
+                    restoreFilePath = restoreDir.resolve(Path.of(relativePath).getFileName());
+                } else {
+                    backupFilePath = backupDir.resolve(relativePath + ".bak");
+                    restoreFilePath = restoreDir.resolve(relativePath);
+                }
 
                 if (!Files.exists(backupFilePath)) {
                     System.err.println("备份文件不存在，跳过: " + backupFilePath);
@@ -300,7 +330,7 @@ public class BackupRestore {
                 }
 
                 // 确保还原文件的父目录存在
-                // createDirectory(restoreFilePath.getParent());
+                createDirectory(restoreFilePath.getParent());
 
                 // 还原单个文件
                 restoreSingleFile(backupFilePath, restoreFilePath);
@@ -312,7 +342,7 @@ public class BackupRestore {
                             progress, processedFiles, totalFiles);
                 }
             } catch (IOException e) {
-                System.err.println("\n还原文件失败: " + fileName + " - " + e.getMessage());
+                System.err.println("\n还原文件失败: " + relativePath + " - " + e.getMessage());
             }
         }
 

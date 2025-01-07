@@ -390,7 +390,8 @@ public class IndexController {
     // 创建按类型筛选的内容
     private VBox createTypeFilterContent(FileInfoList currentFiles) {
         // 清除之前的类型筛选复选框
-        fileCheckboxes.put("type", new ArrayList<>());
+        List<CheckBox> typeBoxes = new ArrayList<>();
+        fileCheckboxes.put("type", typeBoxes);
 
         VBox content = new VBox(10);
         CheckBox selectAll = new CheckBox("Select All");
@@ -404,6 +405,7 @@ public class IndexController {
                 typeGroups.put(type, new ArrayList<>());
                 CheckBox typeHeader = new CheckBox(type);
                 groupHeaders.put(type, typeHeader);
+                typeBoxes.add(typeHeader); // 添加到总列表
 
                 typeHeader.setOnAction(event -> {
                     typeGroups.get(type).forEach(check ->
@@ -414,7 +416,9 @@ public class IndexController {
 
             CheckBox fileCheck = new CheckBox(file.getFileName());
             typeGroups.get(type).add(fileCheck);
+            typeBoxes.add(fileCheck); // 添加到总列表
         }
+
 
         selectAll.setOnAction(event -> {
             boolean selected = selectAll.isSelected();
@@ -437,11 +441,12 @@ public class IndexController {
         return content;
     }
 
-    // 创建按大小筛选的内容
+    // 在 createSizeFilterContent 方法中修改 selectAll 的事件处理
     private VBox createSizeFilterContent(FileInfoList currentFiles) {
-        VBox content = new VBox(10);
+        List<CheckBox> sizeBoxes = new ArrayList<>();
+        fileCheckboxes.put("size", sizeBoxes);
 
-        // 添加大小范围选择
+        VBox content = new VBox(10);
         ComboBox<String> sizeRangeCombo = new ComboBox<>();
         sizeRangeCombo.getItems().addAll(
                 "All Sizes",
@@ -455,20 +460,28 @@ public class IndexController {
 
         VBox filesBox = new VBox(5);
         CheckBox selectAll = new CheckBox("Select All");
+        sizeBoxes.add(selectAll);
 
-        List<CheckBox> fileCheckboxes = new ArrayList<>();
+        List<CheckBox> fileChecks = new ArrayList<>();
         for (FileInfo file : currentFiles.getFileInfos()) {
             CheckBox fileCheck = new CheckBox(file.getFileName() + " (" + formatFileSize(file.getFileSize()) + ")");
-            fileCheckboxes.add(fileCheck);
+            fileChecks.add(fileCheck);
+            sizeBoxes.add(fileCheck);
+            filesBox.getChildren().add(fileCheck);
         }
 
         selectAll.setOnAction(event -> {
             boolean selected = selectAll.isSelected();
-            fileCheckboxes.forEach(check -> check.setSelected(selected));
+            // 只更新当前标签页中的复选框
+            for (CheckBox check : fileChecks) {
+                if (check.isVisible()) {
+                    check.setSelected(selected);
+                }
+            }
         });
 
         sizeRangeCombo.setOnAction(event -> {
-            updateSizeFilteredFiles(sizeRangeCombo.getValue(), fileCheckboxes, currentFiles);
+            updateSizeFilteredFiles(sizeRangeCombo.getValue(), fileChecks, currentFiles);
         });
 
         content.getChildren().addAll(
@@ -476,30 +489,39 @@ public class IndexController {
                 selectAll,
                 filesBox
         );
-        fileCheckboxes.forEach(check -> filesBox.getChildren().add(check));
 
         return content;
     }
 
-    // 创建按日期筛选的内容
+    // 在 createDateFilterContent 方法中修改 selectAll 的事件处理
     private VBox createDateFilterContent(FileInfoList currentFiles) {
-        VBox content = new VBox(10);
+        List<CheckBox> dateBoxes = new ArrayList<>();
+        fileCheckboxes.put("date", dateBoxes);
 
+        VBox content = new VBox(10);
         DatePicker startDate = new DatePicker();
         DatePicker endDate = new DatePicker();
 
         VBox filesBox = new VBox(5);
         CheckBox selectAll = new CheckBox("Select All");
+        dateBoxes.add(selectAll);
 
-        List<CheckBox> fileCheckboxes = new ArrayList<>();
+        List<CheckBox> fileChecks = new ArrayList<>();
         for (FileInfo file : currentFiles.getFileInfos()) {
             CheckBox fileCheck = new CheckBox(file.getFileName() + " (" + file.getFileDate() + ")");
-            fileCheckboxes.add(fileCheck);
+            fileChecks.add(fileCheck);
+            dateBoxes.add(fileCheck);
+            filesBox.getChildren().add(fileCheck);
         }
 
         selectAll.setOnAction(event -> {
             boolean selected = selectAll.isSelected();
-            fileCheckboxes.forEach(check -> check.setSelected(selected));
+            // 只更新当前标签页中的复选框
+            for (CheckBox check : fileChecks) {
+                if (check.isVisible()) {
+                    check.setSelected(selected);
+                }
+            }
         });
 
         content.getChildren().addAll(
@@ -508,34 +530,43 @@ public class IndexController {
                 selectAll,
                 filesBox
         );
-        fileCheckboxes.forEach(check -> filesBox.getChildren().add(check));
 
         return content;
     }
 
-    // 创建按名称筛选的内容
+    // 在 createNameFilterContent 方法中修改 selectAll 的事件处理
     private VBox createNameFilterContent(FileInfoList currentFiles) {
-        VBox content = new VBox(10);
+        List<CheckBox> nameBoxes = new ArrayList<>();
+        fileCheckboxes.put("name", nameBoxes);
 
+        VBox content = new VBox(10);
         TextField searchField = new TextField();
         searchField.setPromptText("Search by filename...");
 
         VBox filesBox = new VBox(5);
         CheckBox selectAll = new CheckBox("Select All");
+        nameBoxes.add(selectAll);
 
-        List<CheckBox> fileCheckboxes = new ArrayList<>();
+        List<CheckBox> fileChecks = new ArrayList<>();
         for (FileInfo file : currentFiles.getFileInfos()) {
             CheckBox fileCheck = new CheckBox(file.getFileName());
-            fileCheckboxes.add(fileCheck);
+            fileChecks.add(fileCheck);
+            nameBoxes.add(fileCheck);
+            filesBox.getChildren().add(fileCheck);
         }
 
         selectAll.setOnAction(event -> {
             boolean selected = selectAll.isSelected();
-            fileCheckboxes.forEach(check -> check.setSelected(selected));
+            // 只更新当前标签页中的复选框
+            for (CheckBox check : fileChecks) {
+                if (check.isVisible()) {
+                    check.setSelected(selected);
+                }
+            }
         });
 
         searchField.textProperty().addListener((observable, oldValue, newValue) -> {
-            updateNameFilteredFiles(newValue, fileCheckboxes, currentFiles);
+            updateNameFilteredFiles(newValue, fileChecks, currentFiles);
         });
 
         content.getChildren().addAll(
@@ -543,7 +574,6 @@ public class IndexController {
                 selectAll,
                 filesBox
         );
-        fileCheckboxes.forEach(check -> filesBox.getChildren().add(check));
 
         return content;
     }
