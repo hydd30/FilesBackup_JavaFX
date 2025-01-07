@@ -4,6 +4,7 @@ import com.example.project.entity.BackupRestore;
 import com.example.project.entity.FileInfo;
 import com.example.project.entity.FileInfoList;
 import javafx.collections.FXCollections;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -25,6 +26,10 @@ public class IndexController {
     private String path;
 
     private FileInfoList fileInfoList;
+
+    private Stack<String> historyPath = new Stack<>();
+
+    private Map<String, List<CheckBox>> fileCheckboxes = new HashMap<>();
 
     @FXML
     private Label currentPath;
@@ -70,6 +75,7 @@ public class IndexController {
                     FileInfo rowData = row.getItem();
                     if (rowData.getIsDirectory()) {
                         this.path = this.path + "\\" + rowData.getFileName();
+                        this.historyPath.push(this.path);
                         try {
                             this.refreshTable();
                         } catch (IOException e) {
@@ -212,6 +218,7 @@ public class IndexController {
                                 String filePath = this.currentPath.getText() + "/" + rowData.getFileName();
                                 // Backup the file
                                 BackupRestore backupRestore = new BackupRestore();
+
                                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                                 // input the password
                                 TextInputDialog dialog = new TextInputDialog();
@@ -279,6 +286,7 @@ public class IndexController {
             if (keyEvent.getCode().toString().equals("ENTER")) {
                 this.path = this.searchPath.getText();
                 this.currentPath.setText(this.path);
+                this.historyPath.push(this.path);
                 this.searchPath.setVisible(false);
                 this.currentPath.setVisible(true);
                 this.getInitialize();
@@ -292,7 +300,7 @@ public class IndexController {
         }
     }
 
-    public void handlePreviousDirectory(MouseEvent mouseEvent) {
+    public void handleParentDirectory(MouseEvent mouseEvent) {
         if (System.getProperty("os.name").toLowerCase().contains("windows")) {
             if (this.path.equals("C:\\") || this.path.equals("D:\\") || this.path.equals("E:\\") || this.path.equals("F:\\")) {
                 return;
@@ -307,15 +315,36 @@ public class IndexController {
             }
         }
         try {
+            this.historyPath.push(this.path);
             this.refreshTable();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    // 在IndexController类中添加新的方法
-// 用于存储所有文件选择框的引用
-    private Map<String, List<CheckBox>> fileCheckboxes = new HashMap<>();
+    public void handlePreviousDirectory(MouseEvent mouseEvent) {
+        if (this.historyPath.size() > 1) {
+            this.historyPath.pop();
+            this.path = this.historyPath.peek();
+            try {
+                this.refreshTable();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void handleOpenNewFileDialog(ActionEvent actionEvent) {
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setTitle("Choose a directory");
+        this.path = directoryChooser.showDialog(null).getAbsolutePath();
+        this.historyPath.push(this.path);
+        try {
+            this.refreshTable();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     private void showFileFilterDialog() {
         Dialog<ButtonType> dialog = new Dialog<>();
@@ -387,9 +416,7 @@ public class IndexController {
         });
     }
 
-    // 创建按类型筛选的内容
     private VBox createTypeFilterContent(FileInfoList currentFiles) {
-        // 清除之前的类型筛选复选框
         List<CheckBox> typeBoxes = new ArrayList<>();
         fileCheckboxes.put("type", typeBoxes);
 
@@ -441,7 +468,6 @@ public class IndexController {
         return content;
     }
 
-    // 在 createSizeFilterContent 方法中修改 selectAll 的事件处理
     private VBox createSizeFilterContent(FileInfoList currentFiles) {
         List<CheckBox> sizeBoxes = new ArrayList<>();
         fileCheckboxes.put("size", sizeBoxes);
@@ -493,7 +519,6 @@ public class IndexController {
         return content;
     }
 
-    // 在 createDateFilterContent 方法中修改 selectAll 的事件处理
     private VBox createDateFilterContent(FileInfoList currentFiles) {
         List<CheckBox> dateBoxes = new ArrayList<>();
         fileCheckboxes.put("date", dateBoxes);
@@ -534,7 +559,6 @@ public class IndexController {
         return content;
     }
 
-    // 在 createNameFilterContent 方法中修改 selectAll 的事件处理
     private VBox createNameFilterContent(FileInfoList currentFiles) {
         List<CheckBox> nameBoxes = new ArrayList<>();
         fileCheckboxes.put("name", nameBoxes);

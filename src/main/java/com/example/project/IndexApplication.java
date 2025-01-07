@@ -29,6 +29,7 @@ public class IndexApplication extends Application {
         directoryChooser.setTitle("Choose a directory");
         indexController.setPath(directoryChooser.showDialog(stage).getAbsolutePath());
         indexController.getCurrentPath().setText(indexController.getPath());
+        indexController.getHistoryPath().push(indexController.getPath());
         indexController.getInitialize();
 
         stage.setTitle("Hello!");

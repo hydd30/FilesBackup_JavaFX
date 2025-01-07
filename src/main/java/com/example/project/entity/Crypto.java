@@ -1,7 +1,5 @@
 package com.example.project.entity;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
@@ -19,10 +17,6 @@ public class Crypto {
     private static final int IV_LENGTH = 16;
     private static final String SALT = "BackupSalt";
     private static final int ITERATIONS = 10000;
-
-    static {
-        Security.addProvider(new BouncyCastleProvider());
-    }
 
     public static class CryptoException extends RuntimeException {
         public CryptoException(String message) {

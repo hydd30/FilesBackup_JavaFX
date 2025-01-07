@@ -2,7 +2,6 @@ module com.example.project {
     requires javafx.controls;
     requires javafx.fxml;
     requires static lombok;
-    requires org.bouncycastle.provider;
 
 
     opens com.example.project to javafx.fxml;

@@ -1,0 +1,16 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="project:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/project_jar</output-path>
+    <root id="archive" name="project.jar">
+      <element id="module-output" name="project" />
+      <element id="extracted-dir" path="D:/DevelopToolkits/apache-maven-3.9.3/mvn_repository/org/openjfx/javafx-graphics/11/javafx-graphics-11.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="D:/DevelopToolkits/apache-maven-3.9.3/mvn_repository/org/openjfx/javafx-graphics/11/javafx-graphics-11-win.jar" path-in-jar="/" />
+      <element id="library" level="project" name="Maven: org.openjfx:javafx-fxml:11" />
+      <element id="extracted-dir" path="D:/DevelopToolkits/apache-maven-3.9.3/mvn_repository/org/openjfx/javafx-base/11/javafx-base-11.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="D:/DevelopToolkits/apache-maven-3.9.3/mvn_repository/org/openjfx/javafx-base/11/javafx-base-11-win.jar" path-in-jar="/" />
+      <element id="library" level="project" name="Maven: org.openjfx:javafx-controls:11" />
+      <element id="library" level="project" name="Maven: org.openjfx:javafx-fxml:win:11" />
+      <element id="library" level="project" name="Maven: org.openjfx:javafx-controls:win:11" />
+    </root>
+  </artifact>
+</component>
