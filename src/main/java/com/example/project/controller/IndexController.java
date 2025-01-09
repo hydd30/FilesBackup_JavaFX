@@ -19,6 +19,9 @@ import lombok.Data;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Data
@@ -519,46 +522,95 @@ public class IndexController {
         return content;
     }
 
-    private VBox createDateFilterContent(FileInfoList currentFiles) {
-        List<CheckBox> dateBoxes = new ArrayList<>();
-        fileCheckboxes.put("date", dateBoxes);
+private VBox createDateFilterContent(FileInfoList currentFiles) {
+    List<CheckBox> dateBoxes = new ArrayList<>();
+    fileCheckboxes.put("date", dateBoxes);
 
-        VBox content = new VBox(10);
-        DatePicker startDate = new DatePicker();
-        DatePicker endDate = new DatePicker();
+    VBox content = new VBox(10);
+    DatePicker startDate = new DatePicker();
+    DatePicker endDate = new DatePicker();
 
-        VBox filesBox = new VBox(5);
-        CheckBox selectAll = new CheckBox("Select All");
-        dateBoxes.add(selectAll);
+    VBox filesBox = new VBox(5);
+    CheckBox selectAll = new CheckBox("Select All");
+    dateBoxes.add(selectAll);
 
-        List<CheckBox> fileChecks = new ArrayList<>();
-        for (FileInfo file : currentFiles.getFileInfos()) {
-            CheckBox fileCheck = new CheckBox(file.getFileName() + " (" + file.getFileDate() + ")");
-            fileChecks.add(fileCheck);
-            dateBoxes.add(fileCheck);
-            filesBox.getChildren().add(fileCheck);
+    List<CheckBox> fileChecks = new ArrayList<>();
+    for (FileInfo file : currentFiles.getFileInfos()) {
+        CheckBox fileCheck = new CheckBox(file.getFileName() + " (" + file.getFileDate() + ")");
+        fileChecks.add(fileCheck);
+        dateBoxes.add(fileCheck);
+        filesBox.getChildren().add(fileCheck);
+    }
+    startDate.valueProperty().addListener((observable, oldValue, newValue) ->
+            updateDateFilteredFiles(startDate.getValue(), endDate.getValue(), fileChecks, currentFiles));
+
+    endDate.valueProperty().addListener((observable, oldValue, newValue) ->
+            updateDateFilteredFiles(startDate.getValue(), endDate.getValue(), fileChecks, currentFiles));
+
+    selectAll.setOnAction(event -> {
+        boolean selected = selectAll.isSelected();
+        for (CheckBox check : fileChecks) {
+            if (check.isVisible()) {
+                check.setSelected(selected);
+            }
+        }
+    });
+
+    content.getChildren().addAll(
+            new HBox(10, new Label("Start Date:"), startDate),
+            new HBox(10, new Label("End Date:"), endDate),
+            selectAll,
+            filesBox
+    );
+
+    return content;
+}
+
+
+    private void updateDateFilteredFiles(LocalDate startDate, LocalDate endDate,
+                                         List<CheckBox> checkboxes, FileInfoList files) {
+        if (startDate == null && endDate == null) {
+            // 如果没有选择日期，显示所有文件
+            checkboxes.forEach(checkbox -> {
+                checkbox.setVisible(true);
+                checkbox.setManaged(true);
+            });
+            return;
         }
 
-        selectAll.setOnAction(event -> {
-            boolean selected = selectAll.isSelected();
-            // 只更新当前标签页中的复选框
-            for (CheckBox check : fileChecks) {
-                if (check.isVisible()) {
-                    check.setSelected(selected);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+        for (int i = 0; i < checkboxes.size(); i++) {
+            FileInfo file = files.getFileInfos().get(i);
+            CheckBox checkbox = checkboxes.get(i);
+
+            try {
+                // 解析文件的修改日期
+                LocalDateTime fileDate = LocalDateTime.parse(file.getFileDate(), formatter);
+                LocalDate fileDateOnly = fileDate.toLocalDate();
+
+                boolean visible = true;
+
+                // 检查开始日期
+                if (startDate != null) {
+                    visible = visible && !fileDateOnly.isBefore(startDate);
                 }
+
+                // 检查结束日期
+                if (endDate != null) {
+                    visible = visible && !fileDateOnly.isAfter(endDate);
+                }
+
+                checkbox.setVisible(visible);
+                checkbox.setManaged(checkbox.isVisible());
+
+            } catch (Exception e) {
+                // 如果日期解析失败，保持文件可见
+                checkbox.setVisible(true);
+                checkbox.setManaged(true);
             }
-        });
-
-        content.getChildren().addAll(
-                new HBox(10, new Label("Start Date:"), startDate),
-                new HBox(10, new Label("End Date:"), endDate),
-                selectAll,
-                filesBox
-        );
-
-        return content;
+        }
     }
-
     private VBox createNameFilterContent(FileInfoList currentFiles) {
         List<CheckBox> nameBoxes = new ArrayList<>();
         fileCheckboxes.put("name", nameBoxes);
